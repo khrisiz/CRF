@@ -2,135 +2,104 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WLR Broadcast</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@700&display=swap');
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-    }
-
     body {
-      background: #000;
+      background-color: #000;
       color: #ff0000;
       font-family: 'Unbounded', sans-serif;
       height: 100vh;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      margin: 0;
     }
-
     header {
+      letter-spacing: 0.15em;
+      font-weight: 700;
+      font-size: 1.5rem;
       text-align: center;
-      padding: 1.2rem;
-      font-size: 2rem;
-      letter-spacing: 0.2em;
-      background: #000;
-      color: #ff0000;
+      padding: 0.75rem 0;
       border-bottom: 2px solid #ff0000;
-      text-shadow: 0 0 10px #ff0000;
+      text-shadow: 0 0 5px #ff0000;
     }
-
     #videoWrapper {
-      flex: 1;
+      flex-grow: 1;
+      position: relative;
+      background: #000;
       display: flex;
       justify-content: center;
       align-items: center;
-      position: relative;
-      background: #000;
+      overflow: hidden;
     }
-
-    video#remoteVideo {
+    #remoteVideo {
       width: 100%;
       height: 100%;
       object-fit: cover;
       filter: contrast(1.2) brightness(1.1) grayscale(20%);
       background: #111;
     }
-
-    video#localVideo {
+    #localVideo {
       position: absolute;
-      bottom: 20px;
-      right: 20px;
-      width: 28%;
+      bottom: 1rem;
+      right: 1rem;
+      width: 30%;
+      max-width: 160px;
       border: 2px solid #ff0000;
-      border-radius: 6px;
+      border-radius: 0.375rem;
       opacity: 0.85;
-      box-shadow: 0 0 25px #ff0000;
+      box-shadow: 0 0 15px #ff0000;
       filter: grayscale(40%);
     }
-
-    #controls {
+    #statusBar {
       background: #000;
-      padding: 1rem;
-      text-align: center;
-    }
-
-    button {
-      background: transparent;
-      border: 2px solid #ff0000;
+      border-top: 2px solid #ff0000;
       color: #ff0000;
-      padding: 0.75rem 2rem;
-      font-size: 1.2rem;
-      border-radius: 4px;
-      font-weight: bold;
+      font-weight: 700;
+      font-size: 0.9rem;
+      padding: 0.5rem 1rem;
+    }
+    #statusBar .d-flex > div {
+      text-shadow: 0 0 4px #ff0000;
+    }
+    button {
+      border-color: #ff0000;
+      color: #ff0000;
+      font-weight: 700;
       letter-spacing: 1px;
       text-transform: uppercase;
-      transition: all 0.3s ease;
-      cursor: pointer;
+      transition: background-color 0.3s, color 0.3s;
     }
-
-    button:hover {
-      background: #ff0000;
+    button:hover:not(:disabled) {
+      background-color: #ff0000;
       color: #000;
-      box-shadow: 0 0 15px #ff0000;
+      box-shadow: 0 0 10px #ff0000;
     }
-
     button:disabled {
       opacity: 0.3;
       cursor: not-allowed;
-    }
-
-    #statusBar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.6rem 1rem;
-      background: #000;
-      font-size: 0.9rem;
-      border-top: 2px solid #ff0000;
-      color: #ff0000;
-    }
-
-    #status {
-      font-weight: bold;
-      text-shadow: 0 0 5px #ff0000;
-    }
-
-    #queue {
-      font-style: italic;
-      opacity: 0.6;
     }
   </style>
   <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
-  <header>LIVE: </header>
+
+  <header>LIVE:</header>
 
   <div id="videoWrapper">
     <video id="remoteVideo" autoplay playsinline></video>
     <video id="localVideo" autoplay muted playsinline></video>
   </div>
 
-  <div id="controls">
-    <button id="skipBtn" disabled>Skip</button>
+  <div class="text-center my-2">
+    <button id="skipBtn" class="btn btn-outline-danger" disabled>Skip</button>
   </div>
 
-  <div id="statusBar">
+  <div id="statusBar" class="d-flex justify-content-between align-items-center">
     <div id="status">WAITING FOR SOMEONE TO TAP IN...</div>
-    <div id="queue">Queue: 0</div>
+    <div id="queue" class="fst-italic opacity-75">Queue: 0</div>
   </div>
 
   <script>
@@ -139,10 +108,7 @@
     let peerConnection;
     let currentRoom = null;
 
-    const config = {
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
-    };
-
+    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
     const localVideo = document.getElementById('localVideo');
     const remoteVideo = document.getElementById('remoteVideo');
     const skipBtn = document.getElementById('skipBtn');
@@ -240,5 +206,7 @@
       currentRoom = null;
     });
   </script>
+  <!-- Bootstrap Bundle JS (includes Popper) -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>
