@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Video Pairing Debug</title>
+  <style>
+    video {
+      width: 45%;
+      margin: 5px;
+      border: 1px solid black;
+    }
+  </style>
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <h2>Video Chat</h2>
+  <div id="status">Waiting for match...</div>
+  <video id="localVideo" autoplay muted playsinline></video>
+  <video id="remoteVideo" autoplay playsinline></video>
+
+  <script>
+    const socket = io();
+    let localStream;
+    let peerConnection;
+    let currentRoom = null;
+
+    const config = {
+      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+    };
+
+    const localVideo = document.getElementById('localVideo');
+    const remoteVideo = document.getElementById('remoteVideo');
+
+    // 1. Get webcam + mic access
+    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+      .then(stream => {
+        localStream = stream;
+        localVideo.srcObject = stream;
+        console.log('Got local media stream');
+        socket.emit('ready'); // Tell server we're ready to be matched
+      })
+      .catch(err => alert('Error accessing camera/mic: ' + err));
+
+    socket.on('connect', () => {
+      console.log('Socket connected:', socket.id);
+    });
+
+    // 2. Receive match info
+    socket.on('match', ({ room, initiator }) => {
+      console.log('Matched! Room:', room, 'Initiator:', initiator);
+      currentRoom = room;
+      document.getElementById('status').innerText = 'Matched! Room: ' + room;
+      startPeerConnection(initiator);
+    });
+
+    // 3. Handle incoming signaling messages
+    socket.on('signal', async data => {
+      console.log('Signal received:', data);
+      if (!peerConnection) {
+        console.warn('No peerConnection yet');
+        return;
+      }
+
+      try {
+        if (data.type === 'offer') {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+          const answer = await peerConnection.createAnswer();
+          await peerConnection.setLocalDescription(answer);
+          socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+        } else if (data.type === 'answer') {
+          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+        } else if (data.candidate) {
+          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+        }
+      } catch (e) {
+        console.error('Error handling signal:', e);
+      }
+    });
+
+    // 4. Setup PeerConnection
+    function startPeerConnection(initiator) {
+      peerConnection = new RTCPeerConnection(config);
+
+      // Add all tracks from local stream
+      localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+      });
+
+      peerConnection.onicecandidate = event => {
+        if (event.candidate) {
+          socket.emit('signal', { room: currentRoom, data: { candidate: event.candidate } });
+        }
+      };
+
+      // Combine multiple tracks from remote peer into one stream
+      const remoteStream = new MediaStream();
+      remoteVideo.srcObject = remoteStream;
+
+      peerConnection.ontrack = event => {
+        console.log('Remote track received:', event.track.kind);
+        remoteStream.addTrack(event.track);
+      };
+
+      if (initiator) {
+        peerConnection.createOffer()
+          .then(offer => peerConnection.setLocalDescription(offer))
+          .then(() => {
+            socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+          });
+      }
+    }
+  </script>
+</body>
+</html>
