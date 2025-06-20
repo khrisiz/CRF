@@ -13,6 +13,29 @@ io.on('connection', socket => {
 
   socket.on('ready', () => {
     console.log('User ready:', socket.id);
+    function printQueue() {
+  if (waiting) {
+    console.log('Queue:', waiting.id);
+  } else {
+    console.log('Queue is empty.');
+  }
+}
+socket.on('ready', () => {
+  if (waiting && waiting.id !== socket.id) {
+    // Pairing logic...
+  } else {
+    waiting = socket;
+    printQueue(); // <-- Log who is waiting
+  }
+});
+
+socket.on('disconnect', () => {
+  if (waiting && waiting.id === socket.id) {
+    waiting = null;
+    printQueue(); // <-- Show updated queue
+  }
+});
+
 
     // Clean up old/stale entries
     const index = waitingUsers.findIndex(s => s.id === socket.id);
