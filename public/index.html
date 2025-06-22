@@ -102,6 +102,12 @@
     <div id="queue" class="fst-italic opacity-75">Queue: 0</div>
   </div>
 
+  <!-- Tip UI -->
+  <div class="text-center my-2">
+    <input id="tipAmount" type="number" min="1" value="5" style="width:70px;" class="form-control d-inline-block" />
+    <button id="tipBtn" class="btn btn-outline-warning" disabled>Send Tip</button>
+  </div>
+
   <script>
     const socket = io();
     let localStream;
@@ -114,6 +120,8 @@
     const skipBtn = document.getElementById('skipBtn');
     const statusText = document.getElementById('status');
     const queueText = document.getElementById('queue');
+    const tipBtn = document.getElementById('tipBtn');
+    const tipAmount = document.getElementById('tipAmount');
 
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
@@ -131,6 +139,7 @@
       currentRoom = room;
       statusText.innerText = 'CONNECTED — STAY LIVE.';
       skipBtn.disabled = false;
+      tipBtn.disabled = false;
       startPeerConnection(initiator);
     });
 
@@ -163,7 +172,12 @@
       }
       remoteVideo.srcObject = null;
       skipBtn.disabled = true;
+      tipBtn.disabled = true;
       statusText.innerText = 'WAITING FOR SOMEONE TO TAP IN...';
+    });
+
+    socket.on('disconnect', () => {
+      tipBtn.disabled = true;
     });
 
     function startPeerConnection(initiator) {
@@ -204,6 +218,19 @@
       statusText.innerText = 'WAITING FOR A NEW MATCH...';
       socket.emit('skip', { room: currentRoom });
       currentRoom = null;
+    });
+
+    // Send tip
+    tipBtn.addEventListener('click', () => {
+      const amount = parseInt(tipAmount.value, 10);
+      if (currentRoom && amount > 0) {
+        socket.emit('tip', { room: currentRoom, amount });
+      }
+    });
+
+    // Receive tip
+    socket.on('tip', ({ from, amount }) => {
+      alert(`You received a tip of $${amount}!`);
     });
   </script>
   <!-- Bootstrap Bundle JS (includes Popper) -->
