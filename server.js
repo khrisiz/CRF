@@ -3,10 +3,12 @@ const http = require('http');
 const { Server } = require('socket.io');
 
 const app = express();
+app.use(express.static(path.join(__dirname, 'public'))); // ✅ this is correct
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(__dirname)); // serve index.html and socket.io client
+
+
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
