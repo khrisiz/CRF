@@ -74,6 +74,12 @@ io.on('connection', socket => {
     tryToMatch();
   });
 
+  socket.on('tip', ({ room, amount }) => {
+    // Broadcast the tip to the other user in the room
+    socket.to(room).emit('tip', { from: socket.id, amount });
+    console.log(`User ${socket.id} sent a tip of ${amount} in room ${room}`);
+  });
+
   socket.on('disconnect', () => {
     console.log('User disconnected:', socket.id);
 
