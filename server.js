@@ -1,16 +1,18 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path');
-
+const path = require('path'); // Make sure this is at the top
+const bodyParser = require('body-parser');
+const User = require('./models/User');
+const bcrypt = require('bcrypt'); // Add this line
+const mongoose = require('mongoose');
 
 const app = express();
-app.use(express.static(path.join(__dirname, 'public'))); // ✅ this is correct
 const server = http.createServer(app);
 const io = new Server(server);
 
-
-
+app.use(express.static(__dirname)); // serve index.html and socket.io client
+app.use(bodyParser.json()); // Add this if not using express.json()
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
@@ -100,8 +102,69 @@ io.on('connection', socket => {
   });
 });
 
+// Serve login.html at /login
+app.get('/login', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+app.post('/register', async (req, res) => {
+  const { username, password, gender } = req.body;
+
+  if (!username || !password || !gender) {
+    return res.status(400).send('Missing required fields');
+  }
+
+  try {
+    const existingUser = await User.findOne({ username });
+    if (existingUser) {
+      return res.status(409).send('Username already taken');
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const newUser = new User({
+      username,
+      password: hashedPassword,
+      gender
+    });
+
+    await newUser.save();
+    res.sendStatus(201);
+  } catch (err) {
+    console.error('Registration error:', err);
+    res.sendStatus(500);
+  }
+});
+
+app.post('/login', async (req, res) => {
+  const { username, password } = req.body;
+  try {
+    const user = await User.findOne({ username });
+    if (user && await bcrypt.compare(password, user.password)) {
+      res.sendStatus(200);
+    } else {
+      res.sendStatus(401);
+    }
+  } catch (err) {
+    res.sendStatus(500);
+  }
+});
+
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'login.html'));
+});
+
 app.use(express.static('public'));
+
+const mongoUri = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/videochat';
+mongoose.connect(mongoUri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => {
+  console.log('Connected to MongoDB');
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
 });
