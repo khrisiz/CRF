@@ -110,6 +110,24 @@
     <button id="tipBtn" class="btn btn-outline-warning" disabled>Send Tip</button>
   </div>
 
+  <!-- Tip Banner -->
+<div id="tip-banner" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:1rem 2rem;border-radius:8px;z-index:20000;box-shadow:0 2px 8px #000;font-weight:600;"></div>
+<script>
+  // Show "You tipped!" banner when you click the tip button
+  tipBtn.addEventListener('click', () => {
+    const amount = parseInt(tipAmount.value, 10);
+    if (currentRoom && amount > 0) {
+      // Show banner
+      const banner = document.getElementById('tip-banner');
+      banner.innerText = '🎉 You tipped!';
+      banner.style.display = 'block';
+      setTimeout(() => {
+        banner.style.display = 'none';
+      }, 3000);
+    }
+  });
+</script>
+
   <script>
     const socket = io();
     let localStream;
@@ -222,22 +240,11 @@
       currentRoom = null;
     });
 
-
-   // Send tip
-tipBtn.addEventListener('click', () => {
-  const amount = parseInt(tipAmount.value, 10);
-  if (currentRoom && amount > 0) {
-    socket.emit('tip', { room: currentRoom, amount });
-
-    // Show "You tipped!" banner
-    const banner = document.getElementById('tip-banner');
-    banner.innerText = '🎉 You tipped!';
-    banner.style.display = 'block';
-    setTimeout(() => {
-      banner.style.display = 'none';
-    }, 3000);
-  }
-});
+    // Send tip
+    tipBtn.addEventListener('click', () => {
+      const amount = parseInt(tipAmount.value, 10);
+      if (currentRoom && amount > 0) {
+        socket.emit('tip', { room: currentRoom, amount });
       }
     });
 
