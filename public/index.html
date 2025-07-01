@@ -222,11 +222,22 @@
       currentRoom = null;
     });
 
-    // Send tip
-    tipBtn.addEventListener('click', () => {
-      const amount = parseInt(tipAmount.value, 10);
-      if (currentRoom && amount > 0) {
-        socket.emit('tip', { room: currentRoom, amount });
+
+   // Send tip
+tipBtn.addEventListener('click', () => {
+  const amount = parseInt(tipAmount.value, 10);
+  if (currentRoom && amount > 0) {
+    socket.emit('tip', { room: currentRoom, amount });
+
+    // Show "You tipped!" banner
+    const banner = document.getElementById('tip-banner');
+    banner.innerText = '🎉 You tipped!';
+    banner.style.display = 'block';
+    setTimeout(() => {
+      banner.style.display = 'none';
+    }, 3000);
+  }
+});
       }
     });
 
