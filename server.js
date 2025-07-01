@@ -1,15 +1,16 @@
 const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
-const path = require('path'); 
+const path = require('path');
 const bodyParser = require('body-parser');
 
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(__dirname)); // serve index.html and socket.io client
-app.use(bodyParser.json()); // Add this if not using express.json()
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, 'public')));
+app.use(bodyParser.json());
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
@@ -47,6 +48,14 @@ function tryToMatch() {
   broadcastQueueStatus();
 }
 
+function removeRoomEntries(room) {
+  for (const [id, r] of rooms.entries()) {
+    if (r === room) {
+      rooms.delete(id);
+    }
+  }
+}
+
 io.on('connection', socket => {
   console.log('User connected:', socket.id);
 
@@ -58,7 +67,9 @@ io.on('connection', socket => {
   });
 
   socket.on('signal', ({ room, data }) => {
-    socket.to(room).emit('signal', data);
+    if (room) {
+      socket.to(room).emit('signal', data);
+    }
   });
 
   socket.on('skip', ({ room }) => {
@@ -67,20 +78,24 @@ io.on('connection', socket => {
     // Leave current room and notify peer
     socket.leave(room);
     socket.to(room).emit('skip');
-    rooms.delete(socket.id);
 
-    // Remove from queue if already there
+    // Remove both users from rooms map
+    removeRoomEntries(room);
+
+    // Ensure user isn't duplicated in queue
     queue = queue.filter(s => s.id !== socket.id);
+    if (!queue.find(s => s.id === socket.id)) {
+      queue.push(socket);
+    }
 
-    // Re-add to queue
-    queue.push(socket);
     tryToMatch();
   });
 
   socket.on('tip', ({ room, amount }) => {
-    // Broadcast the tip to the other user in the room
-    socket.to(room).emit('tip', { from: socket.id, amount });
-    console.log(`User ${socket.id} sent a tip of ${amount} in room ${room}`);
+    if (room && typeof amount === 'number' && amount > 0) {
+      socket.to(room).emit('tip', { from: socket.id, amount });
+      console.log(`User ${socket.id} sent a tip of ${amount} in room ${room}`);
+    }
   });
 
   socket.on('disconnect', () => {
@@ -90,21 +105,19 @@ io.on('connection', socket => {
     queue = queue.filter(s => s.id !== socket.id);
     broadcastQueueStatus();
 
-    // If they were in a room, notify the other peer
+    // Notify peer and remove from room map
     const room = rooms.get(socket.id);
     if (room) {
       socket.to(room).emit('skip');
-      rooms.delete(socket.id);
+      removeRoomEntries(room);
     }
   });
 });
 
-// Serve index.html for the front-end
+// Serve index.html at root
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
-
-app.use(express.static('public')); // serve static files
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
