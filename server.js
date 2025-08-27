@@ -10,6 +10,17 @@ const mongoose = require('mongoose');
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
+const nsfw = require('nsfwjs');
+const tf = require('@tensorflow/tfjs-node');
+const jpeg = require('jpeg-js');
+
+let nsfwModel;
+
+// Load NSFW model on server start
+(async () => {
+  nsfwModel = await nsfw.load(); // Default model loads from internet
+  console.log('✅ NSFW model loaded');
+})();
 
 app.use(express.static(__dirname)); // serve index.html and socket.io client
 app.use(bodyParser.json()); // Add this if not using express.json()
@@ -52,6 +63,30 @@ function tryToMatch() {
 
 io.on('connection', socket => {
   console.log('User connected:', socket.id);
+  socket.on('frame', async ({ image }) => {
+  if (!nsfwModel || !image) return;
+
+  try {
+    const buffer = Buffer.from(image.split(',')[1], 'base64');
+    const tensor = tf.node.decodeImage(buffer, 3);
+
+    const predictions = await nsfwModel.classify(tensor);
+    const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
+    const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
+
+    if (pornScore > 0.8 || hentaiScore > 0.8) {
+      console.log(`⚠️ NSFW content detected from ${socket.id}`);
+      socket.emit('nsfwDetected');
+      // Optionally:
+      // socket.disconnect();
+    })
+    })
+
+    tensor.dispose();
+  } catch (err) {
+    console.error('Detection error:', err);
+  }
+});
 
   socket.on('ready', () => {
     if (!queue.find(s => s.id === socket.id)) {
