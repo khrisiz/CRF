@@ -80,7 +80,7 @@ io.on('connection', socket => {
       socket.emit('nsfwDetected');
       // Optionally:
       // socket.disconnect();
-    });
+    }
 
 
     tensor.dispose();
