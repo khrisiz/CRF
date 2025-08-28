@@ -27,6 +27,7 @@ app.use(bodyParser.json()); // Add this if not using express.json()
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
+}
 
 function makeRoomName(id1, id2) {
   return `room-${id1}-${id2}`;
