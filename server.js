@@ -13,20 +13,27 @@ const jpeg = require('jpeg-js');
 let nsfwModel;
 
 // Load NSFW model on server start
-(async () => {
-  nsfwModel = await nsfw.load(); // Default model loads from internet
-  console.log('✅ NSFW model loaded');
-})();
 socket.on('frame', async ({ image }) => {
   if (!nsfwModel || !image) return;
 
+  try {
+    const buffer = Buffer.from(image.split(',')[1], 'base64');
+    const tensor = tf.node.decodeImage(buffer, 3);
 
-let queue = []; // list of sockets waiting to be matched
-const rooms = new Map(); // socket.id -> room name
+    const predictions = await nsfwModel.classify(tensor);
+    const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
+    const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
 
-function makeRoomName(id1, id2) {
-  return `room-${id1}-${id2}`;
-}
+    if (pornScore > 0.8 || hentaiScore > 0.8) {
+      console.log(`⚠️ NSFW content detected from ${socket.id}`);
+      socket.emit('nsfwDetected');
+    }
+
+    tensor.dispose();
+  } catch (err) {
+    console.error('Detection error:', err);
+  }
+});
 
 function broadcastQueueStatus() {
   io.emit('queueStatus', {
