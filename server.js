@@ -140,29 +140,6 @@ function tryToMatch() {
   });
 });
 
-// Serve login.html at /login
-app.get('/login', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'login.html'));
-});
-app.post('/register', async (req, res) => {
-  const { username, password, gender } = req.body;
-
-  if (!username || !password || !gender) {
-    return res.status(400).send('Missing required fields');
-  }
-
-  try {
-    const existingUser = await User.findOne({ username });
-    if (existingUser) {
-      return res.status(409).send('Username already taken');
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({
-      username,
-      password: hashedPassword,
-      gender
-    });
 
     await newUser.save();
     res.sendStatus(201);
