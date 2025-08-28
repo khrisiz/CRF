@@ -2,11 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path'); // Make sure this is at the top
-const bodyParser = require('body-parser');
-const User = require('./models/User');
-const bcrypt = require('bcrypt'); // Add this line
-const mongoose = require('mongoose');
-
+const bodyParser = require('body-parser')
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
@@ -27,11 +23,6 @@ socket.on('frame', async ({ image }) => {
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
-
-
-  // Your 'frame' event listener here
-  socket.on('frame', async ({ image }) => {
-    if (!nsfwModel || !image) return;
 
 function makeRoomName(id1, id2) {
   return `room-${id1}-${id2}`;
@@ -140,28 +131,6 @@ function tryToMatch() {
   });
 });
 
-
-    await newUser.save();
-    res.sendStatus(201);
-  } catch (err) {
-    console.error('Registration error:', err);
-    res.sendStatus(500);
-  }
-});
-
-app.post('/login', async (req, res) => {
-  const { username, password } = req.body;
-  try {
-    const user = await User.findOne({ username });
-    if (user && await bcrypt.compare(password, user.password)) {
-      res.sendStatus(200);
-    } else {
-      res.sendStatus(401);
-    }
-  } catch (err) {
-    res.sendStatus(500);
-  }
-});
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
