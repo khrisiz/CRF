@@ -86,7 +86,7 @@ io.on('connection', socket => {
   } catch (err) {
     console.error('Detection error:', err);
   }
-});
+}
 
   socket.on('ready', () => {
     if (!queue.find(s => s.id === socket.id)) {
