@@ -21,13 +21,17 @@ let nsfwModel;
   nsfwModel = await nsfw.load(); // Default model loads from internet
   console.log('✅ NSFW model loaded');
 })();
+socket.on('frame', async ({ image }) => {
+  if (!nsfwModel || !image) return;
 
-app.use(express.static(__dirname)); // serve index.html and socket.io client
-app.use(bodyParser.json()); // Add this if not using express.json()
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
 
+
+  // Your 'frame' event listener here
+  socket.on('frame', async ({ image }) => {
+    if (!nsfwModel || !image) return;
 
 function makeRoomName(id1, id2) {
   return `room-${id1}-${id2}`;
@@ -62,10 +66,8 @@ function tryToMatch() {
   broadcastQueueStatus();
 }
 
-io.on('connection', socket => {
-  console.log('User connected:', socket.id);
-  socket.on('frame', async ({ image }) => {
-  if (!nsfwModel || !image) return;
+
+
 
   try {
     const buffer = Buffer.from(image.split(',')[1], 'base64');
