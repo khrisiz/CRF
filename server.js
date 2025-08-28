@@ -12,9 +12,14 @@ const jpeg = require('jpeg-js');
 
 let nsfwModel;
 
-// Load NSFW model on server start
-socket.on('frame', async ({ image }) => {
-  if (!nsfwModel || !image) return;
+(async () => {
+  try {
+    nsfwModel = await nsfw.load(); // Default loads from CDN
+    console.log('✅ NSFW model loaded');
+  } catch (err) {
+    console.error('❌ Failed to load NSFW model:', err);
+  }
+})();
 
   try {
     const buffer = Buffer.from(image.split(',')[1], 'base64');
