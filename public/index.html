@@ -108,132 +108,165 @@
     <button id="tipBtn" class="btn btn-outline-warning" disabled>Send Tip</button>
   </div>
 
-  <script>
-    const socket = io();
-    let localStream;
-    let peerConnection;
-    let currentRoom = null;
 
-    const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
-    const localVideo = document.getElementById('localVideo');
-    const remoteVideo = document.getElementById('remoteVideo');
-    const skipBtn = document.getElementById('skipBtn');
-    const statusText = document.getElementById('status');
-    const queueText = document.getElementById('queue');
-    const tipBtn = document.getElementById('tipBtn');
-    const tipAmount = document.getElementById('tipAmount');
+<script>
+  const socket = io();
+  let localStream;
+  let peerConnection;
+  let currentRoom = null;
 
-    navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-      .then(stream => {
-        localStream = stream;
-        localVideo.srcObject = stream;
-        socket.emit('ready');
-      })
-      .catch(err => alert('Camera/mic error: ' + err));
+  const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
+  const localVideo = document.getElementById('localVideo');
+  const remoteVideo = document.getElementById('remoteVideo');
+  const skipBtn = document.getElementById('skipBtn');
+  const statusText = document.getElementById('status');
+  const queueText = document.getElementById('queue');
+  const tipBtn = document.getElementById('tipBtn');
+  const tipAmount = document.getElementById('tipAmount');
 
-    socket.on('connect', () => {
-      console.log('Connected as:', socket.id);
-    });
+  // 🔴 NSFW SNAPSHOT FUNCTION
+  function sendSnapshot() {
+    if (!localVideo || localVideo.readyState !== 4) return;
 
-    socket.on('match', ({ room, initiator }) => {
-      currentRoom = room;
-      statusText.innerText = 'CONNECTED — STAY LIVE.';
-      skipBtn.disabled = false;
-      tipBtn.disabled = false;
-      startPeerConnection(initiator);
-    });
+    const canvas = document.createElement('canvas');
+    canvas.width = localVideo.videoWidth;
+    canvas.height = localVideo.videoHeight;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+    socket.emit('checkImage', dataUrl);
+  }
 
-    socket.on('signal', async data => {
-      if (!peerConnection) return;
-      try {
-        if (data.type === 'offer') {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-          const answer = await peerConnection.createAnswer();
-          await peerConnection.setLocalDescription(answer);
-          socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
-        } else if (data.type === 'answer') {
-          await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
-        } else if (data.candidate) {
-          await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
-        }
-      } catch (e) {
-        console.error('Signal error:', e);
+  // 🔄 Get webcam and mic
+  navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+    .then(stream => {
+      localStream = stream;
+      localVideo.srcObject = stream;
+      socket.emit('ready');
+    })
+    .catch(err => alert('Camera/mic error: ' + err));
+
+  socket.on('connect', () => {
+    console.log('Connected as:', socket.id);
+  });
+
+  socket.on('match', ({ room, initiator }) => {
+    currentRoom = room;
+    statusText.innerText = 'CONNECTED — STAY LIVE.';
+    skipBtn.disabled = false;
+    tipBtn.disabled = false;
+    startPeerConnection(initiator);
+
+    // Start NSFW scanning every 10s
+    clearInterval(window.snapshotInterval);
+    window.snapshotInterval = setInterval(sendSnapshot, 10000);
+  });
+
+  socket.on('signal', async data => {
+    if (!peerConnection) return;
+    try {
+      if (data.type === 'offer') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+        const answer = await peerConnection.createAnswer();
+        await peerConnection.setLocalDescription(answer);
+        socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+      } else if (data.type === 'answer') {
+        await peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+      } else if (data.candidate) {
+        await peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
       }
-    });
-
-    socket.on('queueStatus', ({ queueLength }) => {
-      queueText.innerText = `Queue: ${queueLength}`;
-    });
-
-    socket.on('skip', () => {
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
-      }
-      remoteVideo.srcObject = null;
-      skipBtn.disabled = true;
-      tipBtn.disabled = true;
-      statusText.innerText = 'WAITING FOR SOMEONE TO TAP IN...';
-    });
-
-    socket.on('disconnect', () => {
-      tipBtn.disabled = true;
-    });
-
-    function startPeerConnection(initiator) {
-      peerConnection = new RTCPeerConnection(config);
-      localStream.getTracks().forEach(track => {
-        peerConnection.addTrack(track, localStream);
-      });
-
-      peerConnection.onicecandidate = event => {
-        if (event.candidate) {
-          socket.emit('signal', { room: currentRoom, data: { candidate: event.candidate } });
-        }
-      };
-
-      const remoteStream = new MediaStream();
-      remoteVideo.srcObject = remoteStream;
-
-      peerConnection.ontrack = event => {
-        remoteStream.addTrack(event.track);
-      };
-
-      if (initiator) {
-        peerConnection.createOffer()
-          .then(offer => peerConnection.setLocalDescription(offer))
-          .then(() => {
-            socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
-          });
-      }
+    } catch (e) {
+      console.error('Signal error:', e);
     }
+  });
 
-    skipBtn.addEventListener('click', () => {
-      if (peerConnection) {
-        peerConnection.close();
-        peerConnection = null;
+  socket.on('queueStatus', ({ queueLength }) => {
+    queueText.innerText = `Queue: ${queueLength}`;
+  });
+
+  socket.on('skip', () => {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+    skipBtn.disabled = true;
+    tipBtn.disabled = true;
+    statusText.innerText = 'WAITING FOR SOMEONE TO TAP IN...';
+    clearInterval(window.snapshotInterval);
+  });
+
+  socket.on('disconnect', () => {
+    tipBtn.disabled = true;
+    clearInterval(window.snapshotInterval);
+  });
+<script>
+  // 🔥 Handle NSFW detection from server
+  socket.on('nsfwDetected', () => {
+    alert('⚠️ NSFW content detected! Disconnecting...');
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+    skipBtn.disabled = true;
+    tipBtn.disabled = true;
+    statusText.innerText = 'DISCONNECTED DUE TO NSFW VIOLATION';
+    socket.emit('skip', { room: currentRoom });
+    clearInterval(window.snapshotInterval);
+    currentRoom = null;
+  });
+
+  function startPeerConnection(initiator) {
+    peerConnection = new RTCPeerConnection(config);
+    localStream.getTracks().forEach(track => {
+      peerConnection.addTrack(track, localStream);
+    });
+
+    peerConnection.onicecandidate = event => {
+      if (event.candidate) {
+        socket.emit('signal', { room: currentRoom, data: { candidate: event.candidate } });
       }
-      remoteVideo.srcObject = null;
-      skipBtn.disabled = true;
-      statusText.innerText = 'WAITING FOR A NEW MATCH...';
-      socket.emit('skip', { room: currentRoom });
-      currentRoom = null;
-    });
+    };
 
-    // Send tip
-    tipBtn.addEventListener('click', () => {
-      const amount = parseInt(tipAmount.value, 10);
-      if (currentRoom && amount > 0) {
-        socket.emit('tip', { room: currentRoom, amount });
-      }
-    });
+    const remoteStream = new MediaStream();
+    remoteVideo.srcObject = remoteStream;
 
-    // Receive tip
-    socket.on('tip', ({ from, amount }) => {
-      alert(`You received a tip of $${amount}!`);
-    });
-  </script>
-  <!-- Bootstrap Bundle JS (includes Popper) -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-</body>
-</html>
+    peerConnection.ontrack = event => {
+      remoteStream.addTrack(event.track);
+    };
+
+    if (initiator) {
+      peerConnection.createOffer()
+        .then(offer => peerConnection.setLocalDescription(offer))
+        .then(() => {
+          socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+        });
+    }
+  }
+
+  skipBtn.addEventListener('click', () => {
+    if (peerConnection) {
+      peerConnection.close();
+      peerConnection = null;
+    }
+    remoteVideo.srcObject = null;
+    skipBtn.disabled = true;
+    tipBtn.disabled = true;
+    statusText.innerText = 'WAITING FOR A NEW MATCH...';
+    socket.emit('skip', { room: currentRoom });
+    clearInterval(window.snapshotInterval);
+    currentRoom = null;
+  });
+
+  tipBtn.addEventListener('click', () => {
+    const amount = parseInt(tipAmount.value, 10);
+    if (currentRoom && amount > 0) {
+      socket.emit('tip', { room: currentRoom, amount });
+    }
+  });
+
+  socket.on('tip', ({ from, amount }) => {
+    alert(`You received a tip of $${amount}!`);
+  });
+</script>
