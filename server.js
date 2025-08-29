@@ -21,18 +21,6 @@ let nsfwModel;
   }
 })();
 
-  try {
-    const buffer = Buffer.from(image.split(',')[1], 'base64');
-    const tensor = tf.node.decodeImage(buffer, 3);
-
-    const predictions = await nsfwModel.classify(tensor);
-    const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
-    const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
-
-    if (pornScore > 0.8 || hentaiScore > 0.8) {
-      console.log(`⚠️ NSFW content detected from ${socket.id}`);
-      socket.emit('nsfwDetected');
-    }
 
     tensor.dispose();
   } catch (err) {
