@@ -200,7 +200,7 @@
     tipBtn.disabled = true;
     clearInterval(window.snapshotInterval);
   });
-<script>
+  
   // 🔥 Handle NSFW detection from server
   socket.on('nsfwDetected', () => {
     alert('⚠️ NSFW content detected! Disconnecting...');
@@ -270,3 +270,4 @@
     alert(`You received a tip of $${amount}!`);
   });
 </script>
+
