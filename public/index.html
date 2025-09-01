@@ -134,7 +134,7 @@
     const ctx = canvas.getContext('2d');
     ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
     const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-    socket.emit('Image', dataUrl);
+    socket.emit('image', dataUrl);
   }
 
   // 🔄 Get webcam and mic
@@ -270,5 +270,6 @@
     alert(`You received a tip of $${amount}!`);
   });
 </script>
+
 
 
