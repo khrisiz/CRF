@@ -2,9 +2,7 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const nsfw = require('nsfwjs');
-const tf = require('@tensorflow/tfjs-node');
-const jpeg = require('jpeg-js');
+const axios = require('axios');
 
 const app = express();
 const server = http.createServer(app);
@@ -105,30 +103,35 @@ io.on('connection', (socket) => {
   // ✅ NSFW image handler
   socket.on('image', async (dataUrl) => {
     try {
-      const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
-      const buffer = Buffer.from(base64, 'base64');
+      const apiKey = 'YOUR_DEEPAI_API_KEY'; // <-- Replace with your DeepAI API key
 
-      const imageTensor = tf.node.decodeImage(buffer, 3);
-      const predictions = await nsfwModel.classify(imageTensor);
-      imageTensor.dispose();
+      // Send image to DeepAI NSFW API
+      const response = await axios.post(
+        'https://api.deepai.org/api/nsfw-detector',
+        {
+          image: dataUrl
+        },
+        {
+          headers: { 'Api-Key': apiKey }
+        }
+      );
+
+      const output = response.data;
+      const nsfwScore = output.output.nsfw_score || 0;
 
       const room = rooms.get(socket.id);
       if (!room) return;
 
-      io.to(room).emit('detectionScores', { predictions });
+      io.to(room).emit('detectionScores', { nsfwScore });
 
-      const porn = predictions.find(p => p.className === 'Porn') || { probability: 0 };
-      const hentai = predictions.find(p => p.className === 'Hentai') || { probability: 0 };
-      const score = Math.max(porn.probability, hentai.probability);
+      console.log(`🧠 DeepAI NSFW score from ${socket.id} in ${room}:`, nsfwScore);
 
-      console.log(`🧠 NSFW score from ${socket.id} in ${room}:`, score);
-
-      if (score > 0.85) {
+      if (nsfwScore > 0.85) {
         console.log(`🚨 NSFW content detected from ${socket.id}`);
         io.to(room).emit('nsfwDetected');
       }
     } catch (err) {
-      console.error('❌ NSFW detection error:', err);
+      console.error('❌ DeepAI NSFW detection error:', err);
     }
   });
 });
@@ -138,6 +141,6 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port: http://localhost:${port}`);
 });
 
