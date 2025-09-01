@@ -123,7 +123,7 @@ io.on('connection', (socket) => {
 
       console.log(`🧠 NSFW score from ${socket.id} in ${room}:`, score);
 
-      if (score > 0.85) {
+      if (score > 0.1) {
         console.log(`🚨 NSFW content detected from ${socket.id}`);
         io.to(room).emit('nsfwDetected');
       }
