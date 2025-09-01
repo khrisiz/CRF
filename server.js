@@ -76,6 +76,34 @@ io.on('connection', (socket) => {
     console.log(`💸 Tip from ${socket.id}: $${amount} in room ${room}`);
   });
 
+  socket.on('image', async (dataUrl) => {
+    try {
+      const apiKey = 'YOUR_DEEPAI_API_KEY'; // Replace with your DeepAI API key
+
+      // Send image to DeepAI NSFW API
+      const response = await axios.post(
+        'https://api.deepai.org/api/nsfw-detector',
+        { image: dataUrl },
+        { headers: { '995f6488-137a-4061-baf8-90866ed0afc3': apiKey } } // <-- Correct header name!
+      );
+
+      const nsfwScore = response.data.output.nsfw_score || 0;
+      const room = rooms.get(socket.id);
+      if (!room) return;
+
+      io.to(room).emit('detectionScores', { nsfwScore });
+
+      console.log(`🧠 DeepAI NSFW score from ${socket.id} in ${room}:`, nsfwScore);
+
+      if (nsfwScore > 0.85) {
+        console.log(`🚨 NSFW content detected from ${socket.id}`);
+        io.to(room).emit('nsfwDetected');
+      }
+    } catch (err) {
+      console.error('❌ DeepAI NSFW detection error:', err);
+    }
+  });
+
   socket.on('disconnect', () => {
     console.log('❌ User disconnected:', socket.id);
 
@@ -90,11 +118,41 @@ io.on('connection', (socket) => {
   });
 });
 
+function startPeerConnection(initiator) {
+  peerConnection = new RTCPeerConnection(config);
+
+  // Add local tracks
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // Handle remote stream
+  peerConnection.ontrack = (event) => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  // ICE candidates
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit('signal', { room: currentRoom, data: { candidate: event.candidate } });
+    }
+  };
+
+  // If initiator, create offer
+  if (initiator) {
+    peerConnection.createOffer()
+      .then(offer => peerConnection.setLocalDescription(offer))
+      .then(() => {
+        socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+      });
+  }
+}
+
 // Static files (optional)
 app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`🚀 Server running on port: http://localhost:${port}`);
+  console.log(`🚀 Server running on port: http://localhost:3000`);
 });
 
