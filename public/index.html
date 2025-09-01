@@ -133,7 +133,7 @@
     canvas.height = localVideo.videoHeight;
     const ctx = canvas.getContext('2d');
     ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('Image/jpeg', 0.7);
+    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
     socket.emit('image', dataUrl);
   }
 
@@ -284,6 +284,7 @@
 </script>
 </body>
 </html>
+
 
 
 
