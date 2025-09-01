@@ -57,35 +57,21 @@ function tryToMatch() {
   broadcastQueueStatus();
 }
 
-io.on('connection', (socket) => {
-  console.log('User connected:', socket.id);
+socket.on('image', async (dataUrl) => {
+  const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+  const buffer = Buffer.from(base64, 'base64');
 
-  socket.on('image', async (image) => {
-    try {
-      const buffer = Buffer.from(image.split(',')[1], 'base64');
-      const tensor = tf.node.decodeImage(buffer, 3);
+  const predictions = await runNSFWModel(buffer); // Your NSFW model call
+  io.to(room).emit('detectionScores', { predictions });
 
-      const predictions = await nsfwModel.classify(tensor);
-      const pornScore = predictions.find(p => p.className === 'Porn')?.probability || 0;
-      const hentaiScore = predictions.find(p => p.className === 'Hentai')?.probability || 0;
+  const porn = predictions.find(p => p.className === 'Porn');
+  const hentai = predictions.find(p => p.className === 'Hentai');
+  const score = Math.max(porn.probability, hentai.probability);
 
-      if (pornScore > 0.8 || hentaiScore > 0.8) {
-        console.log(`⚠️ NSFW content detected from ${socket.id}`);
-        socket.emit('nsfwDetected');
-        // Optionally: socket.disconnect();
-        socket.on('image', async (image) => {
-  try {
-    console.log(`Analyzing image from ${socket.id}`);
-    const buffer = Buffer.from(image.split(',')[1], 'base64');
-    const tensor = tf.node.decodeImage(buffer, 3);
-    // ... rest of the code
-      }
-
-      tensor.dispose();
-    } catch (err) {
-      console.error('Detection error:', err);
-    }
-  });
+  if (score > 0.85) {
+    io.to(room).emit('nsfwDetected');
+  }
+});
 
   socket.on('ready', () => {
     if (!queue.find(s => s.id === socket.id)) {
