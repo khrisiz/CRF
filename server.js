@@ -73,6 +73,12 @@ io.on('connection', (socket) => {
         console.log(`⚠️ NSFW content detected from ${socket.id}`);
         socket.emit('nsfwDetected');
         // Optionally: socket.disconnect();
+        socket.on('image', async (image) => {
+  try {
+    console.log(`Analyzing image from ${socket.id}`);
+    const buffer = Buffer.from(image.split(',')[1], 'base64');
+    const tensor = tf.node.decodeImage(buffer, 3);
+    // ... rest of the code
       }
 
       tensor.dispose();
