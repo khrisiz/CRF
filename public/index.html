@@ -125,17 +125,20 @@
   const tipAmount = document.getElementById('tipAmount');
 
   // 🔴 NSFW SNAPSHOT FUNCTION
-  function sendSnapshot() {
-    if (!localVideo || localVideo.readyState !== 4) return;
+function sendSnapshot() {
+  if (!localVideo || localVideo.readyState !== 4) return;
 
-    const canvas = document.createElement('canvas');
-    canvas.width = localVideo.videoWidth;
-    canvas.height = localVideo.videoHeight;
-    const ctx = canvas.getContext('2d');
-    ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
-    socket.emit('image', dataUrl);
-  }
+  const canvas = document.createElement('canvas');
+  canvas.width = localVideo.videoWidth;
+  canvas.height = localVideo.videoHeight;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(localVideo, 0, 0, canvas.width, canvas.height);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+  console.log('📸 Sending snapshot to server');
+  socket.emit('image', dataUrl);
+}
+
 
   // 🔄 Get webcam and mic
   navigator.mediaDevices.getUserMedia({ video: true, audio: true })
@@ -284,6 +287,7 @@
 </script>
 </body>
 </html>
+
 
 
 
