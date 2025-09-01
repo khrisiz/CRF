@@ -2,7 +2,6 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
-const bodyParser = require('body-parser');
 const nsfw = require('nsfwjs');
 const tf = require('@tensorflow/tfjs-node');
 const jpeg = require('jpeg-js');
@@ -15,6 +14,7 @@ let nsfwModel;
 let queue = [];
 const rooms = new Map();
 
+// Load NSFW model on server start
 (async () => {
   try {
     nsfwModel = await nsfw.load();
@@ -51,27 +51,15 @@ function tryToMatch() {
     user1.emit('match', { room, initiator: true });
     user2.emit('match', { room, initiator: false });
 
-    console.log(`Matched ${user1.id} with ${user2.id} in room ${room}`);
+    console.log(`🔗 Matched ${user1.id} with ${user2.id} in room ${room}`);
   }
 
   broadcastQueueStatus();
 }
 
-socket.on('image', async (dataUrl) => {
-  const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
-  const buffer = Buffer.from(base64, 'base64');
-
-  const predictions = await runNSFWModel(buffer); // Your NSFW model call
-  io.to(room).emit('detectionScores', { predictions });
-
-  const porn = predictions.find(p => p.className === 'Porn');
-  const hentai = predictions.find(p => p.className === 'Hentai');
-  const score = Math.max(porn.probability, hentai.probability);
-
-  if (score > 0.85) {
-    io.to(room).emit('nsfwDetected');
-  }
-});
+// Socket.io connection
+io.on('connection', (socket) => {
+  console.log('✅ User connected:', socket.id);
 
   socket.on('ready', () => {
     if (!queue.find(s => s.id === socket.id)) {
@@ -85,44 +73,71 @@ socket.on('image', async (dataUrl) => {
   });
 
   socket.on('skip', ({ room }) => {
-    console.log('User skipped:', socket.id);
+    console.log('⏭️ User skipped:', socket.id);
 
-    // Leave current room and notify peer
     socket.leave(room);
     socket.to(room).emit('skip');
     rooms.delete(socket.id);
 
-    // Remove from queue if already there
     queue = queue.filter(s => s.id !== socket.id);
-
-    // Re-add to queue
     queue.push(socket);
     tryToMatch();
   });
 
   socket.on('tip', ({ room, amount }) => {
-    // Broadcast the tip to the other user in the room
     socket.to(room).emit('tip', { from: socket.id, amount });
-    console.log(`User ${socket.id} sent a tip of ${amount} in room ${room}`);
+    console.log(`💸 Tip from ${socket.id}: $${amount} in room ${room}`);
   });
 
   socket.on('disconnect', () => {
-    console.log('User disconnected:', socket.id);
+    console.log('❌ User disconnected:', socket.id);
 
-    // Remove from queue
     queue = queue.filter(s => s.id !== socket.id);
     broadcastQueueStatus();
 
-    // If they were in a room, notify the other peer
     const room = rooms.get(socket.id);
     if (room) {
       socket.to(room).emit('skip');
       rooms.delete(socket.id);
     }
   });
+
+  // ✅ NSFW image handler
+  socket.on('image', async (dataUrl) => {
+    try {
+      const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, '');
+      const buffer = Buffer.from(base64, 'base64');
+
+      const imageTensor = tf.node.decodeImage(buffer, 3);
+      const predictions = await nsfwModel.classify(imageTensor);
+      imageTensor.dispose();
+
+      const room = rooms.get(socket.id);
+      if (!room) return;
+
+      io.to(room).emit('detectionScores', { predictions });
+
+      const porn = predictions.find(p => p.className === 'Porn') || { probability: 0 };
+      const hentai = predictions.find(p => p.className === 'Hentai') || { probability: 0 };
+      const score = Math.max(porn.probability, hentai.probability);
+
+      console.log(`🧠 NSFW score from ${socket.id} in ${room}:`, score);
+
+      if (score > 0.85) {
+        console.log(`🚨 NSFW content detected from ${socket.id}`);
+        io.to(room).emit('nsfwDetected');
+      }
+    } catch (err) {
+      console.error('❌ NSFW detection error:', err);
+    }
+  });
 });
+
+// Static files (optional)
+app.use(express.static(path.join(__dirname, 'public')));
 
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
+
