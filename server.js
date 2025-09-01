@@ -78,7 +78,7 @@ io.on('connection', (socket) => {
 
   socket.on('image', async (dataUrl) => {
     try {
-      const apiKey = 'YOUR_DEEPAI_API_KEY'; // Replace with your DeepAI API key
+      const apiKey = '995f6488-137a-4061-baf8-90866ed0afc3' // Replace with your DeepAI API key
 
       // Send image to DeepAI NSFW API
       const response = await axios.post(
