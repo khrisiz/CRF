@@ -12,6 +12,7 @@ const queueText = document.getElementById('queue');
 const nsfwScoreText = document.getElementById('nsfwScore');
 const tipBtn = document.getElementById('tipBtn');
 const tipAmount = document.getElementById('tipAmount');
+const apiKey = 'your-api-key-here'; // Add your API key here
 
 // 🔴 NSFW SNAPSHOT FUNCTION
 function sendSnapshot() {
@@ -25,7 +26,7 @@ function sendSnapshot() {
   const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
 
   console.log('📸 Sending snapshot to server');
-  socket.emit('image', dataUrl);
+  socket.emit('image', dataUrl, { headers: { 'f136e13c-6c79-4cf8-9dbb-00afeffab29d': apiKey } });
 }
 
 // 🔄 Get webcam and mic
@@ -119,4 +120,34 @@ socket.on('nsfwDetected', () => {
   clearInterval(window.snapshotInterval);
   currentRoom = null;
 });
+
+function startPeerConnection(initiator) {
+  peerConnection = new RTCPeerConnection(config);
+
+  // Add local tracks
+  localStream.getTracks().forEach(track => {
+    peerConnection.addTrack(track, localStream);
+  });
+
+  // Handle remote stream
+  peerConnection.ontrack = (event) => {
+    remoteVideo.srcObject = event.streams[0];
+  };
+
+  // ICE candidates
+  peerConnection.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit('signal', { room: currentRoom, data: { candidate: event.candidate } });
+    }
+  };
+
+  // If initiator, create offer
+  if (initiator) {
+    peerConnection.createOffer()
+      .then(offer => peerConnection.setLocalDescription(offer))
+      .then(() => {
+        socket.emit('signal', { room: currentRoom, data: peerConnection.localDescription });
+      });
+  }
+}
 
