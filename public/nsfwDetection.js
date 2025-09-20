@@ -1,7 +1,7 @@
 import OpenAI from "openai";
 
 // Initialize OpenAI with your API key
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openai = new OpenAI({ apiKey: process.env.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 });
 
 /**
  * Check if a text is NSFW
