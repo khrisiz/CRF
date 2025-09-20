@@ -110,24 +110,36 @@
     <button id="tipBtn" class="btn btn-outline-warning" disabled>Send Tip</button>
   </div>
 
-  <!-- Tip Banner -->
-<div id="tip-banner" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:1rem 2rem;border-radius:8px;z-index:20000;box-shadow:0 2px 8px #000;font-weight:600;"></div>
+ <script src="/socket.io/socket.io.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    // Connect to your Socket.IO server
+    const socket = io();
 
-  <script>
-  // Show "You tipped!" banner when you click the tip button
-  tipBtn.addEventListener('click', () => {
-    const amount = parseInt(tipAmount.value, 10);
-    if (currentRoom && amount > 0) {
-      // Show banner
-      const banner = document.getElementById('tip-banner');
-      banner.innerText = '🎉 You tipped!';
-      banner.style.display = 'block';
-      setTimeout(() => {
-        banner.style.display = 'none';
-      }, 3000);
+    // Receive tip event from server
+    socket.on("tip", ({ from, amount }) => {
+      alert(`💰 You received a tip of $${amount} from ${from || "someone"}!`);
+    });
+
+    // Handle Send Tip button click
+    const tipBtn = document.getElementById("tipBtn");
+    const tipInput = document.getElementById("tipAmount");
+
+    if (tipBtn && tipInput) {
+      tipBtn.addEventListener("click", () => {
+        const amount = parseInt(tipInput.value, 10);
+        if (!isNaN(amount) && amount > 0) {
+          socket.emit("tip", { from: "You", amount });
+        } else {
+          alert("Please enter a valid tip amount.");
+        }
+      });
+    } else {
+      console.warn("⚠️ Missing #tipBtn or #tipAmount in your HTML.");
     }
   });
 </script>
+
 
 
   <script>
@@ -200,6 +212,7 @@
 </script>
 </body>
 </html>
+
 
 
 
