@@ -107,119 +107,88 @@
   <!-- Tip UI -->
   <div class="text-center my-2">
     <input id="tipAmount" type="number" min="1" value="5" style="width:70px;" class="form-control d-inline-block" />
-    <button id="tipBtn" class="btn btn-outline-warning" disabled>Send Tip</button>
+    <button id="tipBtn" class="btn btn-outline-warning">Send Tip</button>
   </div>
-
- <script src="/socket.io/socket.io.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", () => {
-    // Connect to your Socket.IO server
-    const socket = io();
-
-    // Receive tip event from server
-    socket.on("tip", ({ from, amount }) => {
-      alert(`💰 You received a tip of $${amount} from ${from || "someone"}!`);
-    });
-
-    // Handle Send Tip button click
-    const tipBtn = document.getElementById("tipBtn");
-    const tipInput = document.getElementById("tipAmount");
-
-    if (tipBtn && tipInput) {
-      tipBtn.addEventListener("click", () => {
-        const amount = parseInt(tipInput.value, 10);
-        if (!isNaN(amount) && amount > 0) {
-          socket.emit("tip", { from: "You", amount });
-        } else {
-          alert("Please enter a valid tip amount.");
-        }
-      });
-    } else {
-      console.warn("⚠️ Missing #tipBtn or #tipAmount in your HTML.");
-    }
-  });
-</script>
-
-
 
   <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      // Connect to your Socket.IO server
+      const socket = io();
 
-    // Receive tip
-    socket.on('tip', ({ from, amount }) => {
-      alert(`You received a tip of $${amount}!`);
+      // Receive tip event from server
+      socket.on("tip", ({ from, amount }) => {
+        alert(`💰 You received a tip of $${amount} from ${from || "someone"}!`);
+      });
+
+      // Handle Send Tip button click
+      const tipBtn = document.getElementById("tipBtn");
+      const tipInput = document.getElementById("tipAmount");
+
+      if (tipBtn && tipInput) {
+        tipBtn.addEventListener("click", () => {
+          const amount = parseInt(tipInput.value, 10);
+          if (!isNaN(amount) && amount > 0) {
+            socket.emit("tip", { from: "You", amount });
+          } else {
+            alert("Please enter a valid tip amount.");
+          }
+        });
+      }
     });
-
-    // Redirect to index.html on successful response
-    fetch('/some-endpoint')
-      .then(res => {
-        if (res.ok) {
-          window.location.href = '/index.html';
-        }
-      })
-      .catch(err => console.error('Fetch error:', err));
   </script>
+
   <!-- Bootstrap Bundle JS (includes Popper) -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
   <!-- Consent Banner for Ads -->
-<div id="consent-banner" style="position:fixed;bottom:0;left:0;width:100%;background:#222;color:#fff;padding:1rem;display:none;z-index:9999;box-shadow:0 -2px 8px #000;">
-  <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between">
-    <span>
-      This site uses cookies and may show ads to support our service. By continuing, you consent to personalized ads and cookies.
-    </span>
-    <div class="mt-2 mt-md-0">
-      <button id="consent-accept" class="btn btn-success btn-sm me-2">Accept</button>
-      <button id="consent-decline" class="btn btn-secondary btn-sm">Decline</button>
+  <div id="consent-banner" style="position:fixed;bottom:0;left:0;width:100%;background:#222;color:#fff;padding:1rem;display:none;z-index:9999;box-shadow:0 -2px 8px #000;">
+    <div class="container d-flex flex-column flex-md-row align-items-center justify-content-between">
+      <span>
+        This site uses cookies and may show ads to support our service. By continuing, you consent to personalized ads and cookies.
+      </span>
+      <div class="mt-2 mt-md-0">
+        <button id="consent-accept" class="btn btn-success btn-sm me-2">Accept</button>
+        <button id="consent-decline" class="btn btn-secondary btn-sm">Decline</button>
+      </div>
     </div>
   </div>
-</div>
-<script>
-  // Consent Banner Logic
-  function showConsentBanner() {
-    if (!localStorage.getItem('adsConsent')) {
-      document.getElementById('consent-banner').style.display = 'block';
+  <script>
+    // Consent Banner Logic
+    function showConsentBanner() {
+      if (!localStorage.getItem('adsConsent')) {
+        document.getElementById('consent-banner').style.display = 'block';
+      }
     }
-  }
-  document.getElementById('consent-accept').onclick = function() {
-    localStorage.setItem('adsConsent', 'accepted');
-    document.getElementById('consent-banner').style.display = 'none';
-    // TODO: Initialize ads here
-  };
-  document.getElementById('consent-decline').onclick = function() {
-    localStorage.setItem('adsConsent', 'declined');
-    document.getElementById('consent-banner').style.display = 'none';
-    // TODO: Do not show ads
-  };
-  showConsentBanner();
-  
-</script>
-   <!-- Free Tip Banner -->
-<div id="free-tip-banner" style="width:100%;background:#ffc107;color:#222;padding:.75rem 1rem;text-align:center;position:fixed;top:0;left:0;z-index:10000;box-shadow:0 2px 8px #000;">
-  <span style="font-weight:600;">Enjoying the broadcast?</span>
-  <button id="freeTipBtn" class="btn btn-sm btn-success ms-2">Send a Free Tip!</button>
-  <button id="closeFreeTip" class="btn btn-sm btn-outline-dark ms-2">×</button>
-</div>
-<script>
-  // Hide banner on close
-  document.getElementById('closeFreeTip').onclick = function() {
-    document.getElementById('free-tip-banner').style.display = 'none';
-  };
-  // Handle free tip button (customize as needed)
-  document.getElementById('freeTipBtn').onclick = function() {
-    alert('Thank you for your support! (This is a free tip)');
-    document.getElementById('free-tip-banner').style.display = 'none';
-    // TODO: Optionally send a "free tip" event to your server here
-  };
-</script>
+    document.getElementById('consent-accept').onclick = function() {
+      localStorage.setItem('adsConsent', 'accepted');
+      document.getElementById('consent-banner').style.display = 'none';
+    };
+    document.getElementById('consent-decline').onclick = function() {
+      localStorage.setItem('adsConsent', 'declined');
+      document.getElementById('consent-banner').style.display = 'none';
+    };
+    showConsentBanner();
+  </script>
+
+  <!-- Free Tip Banner -->
+  <div id="free-tip-banner" style="width:100%;background:#ffc107;color:#222;padding:.75rem 1rem;text-align:center;position:fixed;top:0;left:0;z-index:10000;box-shadow:0 2px 8px #000;">
+    <span style="font-weight:600;">Enjoying the broadcast?</span>
+    <button id="freeTipBtn" class="btn btn-sm btn-success ms-2">Send a Free Tip!</button>
+    <button id="closeFreeTip" class="btn btn-sm btn-outline-dark ms-2">×</button>
+  </div>
+  <script>
+    // Hide banner on close
+    document.getElementById('closeFreeTip').onclick = function() {
+      document.getElementById('free-tip-banner').style.display = 'none';
+    };
+    // Handle free tip button
+    document.getElementById('freeTipBtn').onclick = function() {
+      alert('Thank you for your support! (This is a free tip)');
+      document.getElementById('free-tip-banner').style.display = 'none';
+      // Optionally: socket.emit("freeTip");
+    };
+  </script>
+
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
 
