@@ -113,13 +113,6 @@
   <!-- Tip Banner -->
 <div id="tip-banner" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:1rem 2rem;border-radius:8px;z-index:20000;box-shadow:0 2px 8px #000;font-weight:600;"></div>
 
-<!-- AI Content Checker -->
-<div class="text-center my-3">
-  <textarea id="aiCheckInput" class="form-control" rows="4" placeholder="Paste text to check for AI..."></textarea>
-  <button id="aiCheckBtn" class="btn btn-outline-primary mt-2">Check AI</button>
-  <div id="aiCheckResult" class="mt-2" style="font-weight:bold;"></div>
-</div>
-
   <script>
   // Show "You tipped!" banner when you click the tip button
   tipBtn.addEventListener('click', () => {
@@ -134,54 +127,6 @@
       }, 3000);
     }
   });
-</script>
-  <!-- NSFW Content Checker -->
-<div class="text-center my-3">
-  <textarea id="aiCheckInput" class="form-control" rows="4" placeholder="Paste text to check for NSFW..."></textarea>
-  <button id="aiCheckBtn" class="btn btn-outline-primary mt-2">Check NSFW</button>
-  <div id="aiCheckResult" class="mt-2" style="font-weight:bold;"></div>
-</div>
-
-<script>
-  <script type="module">
-import OpenAI from "https://cdn.jsdelivr.net/npm/openai/dist/openai.min.js";
-
-// Initialize OpenAI securely via environment variable or server-side proxy
-// DO NOT expose your API key in client-side code
-const openai = new OpenAI({ apiKey: "YOUR_API_KEY_HERE" });
-
-const aiCheckBtn = document.getElementById('aiCheckBtn');
-const aiCheckInput = document.getElementById('aiCheckInput');
-const aiCheckResult = document.getElementById('aiCheckResult');
-
-aiCheckBtn.addEventListener('click', async () => {
-  const text = aiCheckInput.value.trim();
-  if (!text) {
-    aiCheckResult.innerText = "Please enter some text.";
-    return;
-  }
-
-  aiCheckResult.innerText = "Checking...";
-
-  try {
-    const response = await openai.moderations.create({
-      model: "omni-moderation-latest",
-      input: text
-    });
-
-    const categories = response.results[0].categories;
-    if (categories.sexual_explicit) {
-      aiCheckResult.innerText = "⚠️ NSFW content detected!";
-    } else {
-      aiCheckResult.innerText = "✅ Content appears safe.";
-    }
-  } catch (err) {
-    console.error(err);
-    aiCheckResult.innerText = "Error checking content. See console.";
-  }
-});
-</script>
-
 </script>
 
 
@@ -255,6 +200,7 @@ aiCheckBtn.addEventListener('click', async () => {
 </script>
 </body>
 </html>
+
 
 
 
