@@ -112,7 +112,14 @@
 
   <!-- Tip Banner -->
 <div id="tip-banner" style="display:none;position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#28a745;color:#fff;padding:1rem 2rem;border-radius:8px;z-index:20000;box-shadow:0 2px 8px #000;font-weight:600;"></div>
-<script>
+<!-- AI Content Checker -->
+<div class="text-center my-3">
+  <textarea id="aiCheckInput" class="form-control" rows="4" placeholder="Paste text to check for AI..."></textarea>
+  <button id="aiCheckBtn" class="btn btn-outline-primary mt-2">Check AI</button>
+  <div id="aiCheckResult" class="mt-2" style="font-weight:bold;"></div>
+</div>
+
+  <script>
   // Show "You tipped!" banner when you click the tip button
   tipBtn.addEventListener('click', () => {
     const amount = parseInt(tipAmount.value, 10);
@@ -142,6 +149,26 @@
     const queueText = document.getElementById('queue');
     const tipBtn = document.getElementById('tipBtn');
     const tipAmount = document.getElementById('tipAmount');
+const aiCheckBtn = document.getElementById('aiCheckBtn');
+const aiCheckInput = document.getElementById('aiCheckInput');
+const aiCheckResult = document.getElementById('aiCheckResult');
+
+function detectAI(text) {
+  const aiPhrases = ["As an AI language model", "I cannot provide", "I am unable"];
+  let score = 0;
+  aiPhrases.forEach(phrase => { if (text.includes(phrase)) score++; });
+  return score > 0 ? "⚠️ Likely AI-generated" : "✅ Likely Human-written";
+}
+
+aiCheckBtn.addEventListener('click', () => {
+  const text = aiCheckInput.value.trim();
+  if (!text) {
+    aiCheckResult.innerText = "Please enter some text.";
+    return;
+  }
+  aiCheckResult.innerText = detectAI(text);
+});
+
 
     navigator.mediaDevices.getUserMedia({ video: true, audio: true })
       .then(stream => {
@@ -316,3 +343,4 @@
 </script>
 </body>
 </html>
+
