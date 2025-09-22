@@ -101,7 +101,7 @@ io.on('connection', socket => {
 
 // Serve index.html for the front-end
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  res.sendFile(path.join(__dirname, 'public',));
 });
 
 app.use(express.static('public')); // serve static files
