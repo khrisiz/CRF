@@ -109,6 +109,27 @@
     <input id="tipAmount" type="number" min="1" value="5" style="width:70px;" class="form-control d-inline-block" />
     <button id="tipBtn" class="btn btn-outline-warning">Send Tip</button>
   </div>
+<script src="/socket.io/socket.io.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", () => {
+    const socket = io();
+
+    // Listen for "paired" event
+    socket.on("paired", (partnerId) => {
+      console.log("You are paired with:", partnerId);
+    });
+
+    // Listen for chat messages
+    socket.on("message", (msg) => {
+      console.log("Partner:", msg);
+    });
+
+    // Send a message (example)
+    function sendMessage(msg) {
+      socket.emit("message", msg);
+    }
+  });
+</script>
 
   <script>
     document.addEventListener("DOMContentLoaded", () => {
@@ -191,4 +212,5 @@
 
 </body>
 </html>
+
 
