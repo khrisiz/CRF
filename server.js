@@ -9,9 +9,19 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-// Serve static files from project root (index.html, client.js)
-app.use(express.static(__dirname));
-app.use(bodyParser.json());
+
+// Serve static files (HTML, CSS, JS) from /public
+app.use(express.static(path.join(__dirname, "public")));
+
+// Built-in body parsing
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Default route serves index.html
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
 
 let queue = []; // list of sockets waiting to be matched
 const rooms = new Map(); // socket.id -> room name
