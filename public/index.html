@@ -1,6 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <video id="localVideo" autoplay muted playsinline></video>
+<script>
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then(stream => {
+    document.getElementById('localVideo').srcObject = stream;
+  })
+  .catch(console.error);
+</script>
+
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>WLR Broadcast</title>
@@ -144,4 +153,5 @@
   <script src="client.js"></script>
 </body>
 </html>
+
 
