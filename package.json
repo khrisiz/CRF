@@ -12,10 +12,6 @@
   },
   "engines": {
     "node": ">=22.0.0"
-  },
-  "keywords": ["video", "pairing", "socket.io", "live", "webrtc"],
-  "author": "Your Name",
-  "license": "MIT"
+  }
 }
-
 
