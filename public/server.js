@@ -8,7 +8,8 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(__dirname)); // serve index.html and socket.io client
+app.use(express.static(path.join(__dirname, 'public')));
+ // serve index.html and socket.io client
 app.use(bodyParser.json()); // Add this if not using express.json()
 
 let queue = []; // list of sockets waiting to be matched
