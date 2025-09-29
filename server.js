@@ -10,14 +10,10 @@ const server = http.createServer(app);
 const io = new Server(server);
 
 
-// Serve static files (HTML, CSS, JS) from /public
-app.use(express.static(path.join(__dirname, "public")));
-
 // Built-in body parsing
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-});
 
 
 let queue = []; // list of sockets waiting to be matched
