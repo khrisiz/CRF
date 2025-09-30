@@ -1,62 +1,56 @@
-document.addEventListener("DOMContentLoaded", () => {
-  const socket = io();
+const socket = io();
+const peer = new RTCPeerConnection();
+const localVideo = document.getElementById("localVideo");
+const remoteVideo = document.getElementById("remoteVideo");
 
-  // Pairing
-  socket.on("paired", (partnerId) => {
-    console.log("You are paired with:", partnerId);
-  });
+// 1. Get webcam + mic
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then(stream => {
+    localVideo.srcObject = stream;
+    stream.getTracks().forEach(track => peer.addTrack(track, stream));
+  })
+  .catch(err => console.error("Error accessing media devices:", err));
 
-  // Messages
-  socket.on("message", (msg) => {
-    console.log("Partner:", msg);
-  });
+// 2. When remote stream arrives, show it
+peer.ontrack = event => {
+  remoteVideo.srcObject = event.streams[0];
+};
 
-  function sendMessage(msg) {
-    socket.emit("message", msg);
+// 3. Send ICE candidates to server
+peer.onicecandidate = event => {
+  if (event.candidate) {
+    socket.emit("ice-candidate", event.candidate);
   }
+};
 
-  // Tip system
-  socket.on("tip", ({ from, amount }) => {
-    alert(`💰 You received a tip of $${amount} from ${from || "someone"}!`);
-  });
-
-  const tipBtn = document.getElementById("tipBtn");
-  const tipInput = document.getElementById("tipAmount");
-  if (tipBtn && tipInput) {
-    tipBtn.addEventListener("click", () => {
-      const amount = parseInt(tipInput.value, 10);
-      if (!isNaN(amount) && amount > 0) {
-        socket.emit("tip", { from: "You", amount });
-      } else {
-        alert("Please enter a valid tip amount.");
-      }
-    });
-  }
-
-  // Consent banner
-  function showConsentBanner() {
-    if (!localStorage.getItem("adsConsent")) {
-      document.getElementById("consent-banner").style.display = "block";
-    }
-  }
-  document.getElementById("consent-accept").onclick = function () {
-    localStorage.setItem("adsConsent", "accepted");
-    document.getElementById("consent-banner").style.display = "none";
-  };
-  document.getElementById("consent-decline").onclick = function () {
-    localStorage.setItem("adsConsent", "declined");
-    document.getElementById("consent-banner").style.display = "none";
-  };
-  showConsentBanner();
-
-  // Free tip banner
-  document.getElementById("closeFreeTip").onclick = function () {
-    document.getElementById("free-tip-banner").style.display = "none";
-  };
-  document.getElementById("freeTipBtn").onclick = function () {
-    alert("Thank you for your support! (This is a free tip)");
-    document.getElementById("free-tip-banner").style.display = "none";
-    // socket.emit("freeTip");
-  };
+// 4. Handle signaling messages from server
+socket.on("offer", async (offer) => {
+  await peer.setRemoteDescription(new RTCSessionDescription(offer));
+  const answer = await peer.createAnswer();
+  await peer.setLocalDescription(answer);
+  socket.emit("answer", answer);
 });
 
+socket.on("answer", async (answer) => {
+  await peer.setRemoteDescription(new RTCSessionDescription(answer));
+});
+
+socket.on("ice-candidate", async (candidate) => {
+  try {
+    await peer.addIceCandidate(new RTCIceCandidate(candidate));
+  } catch (err) {
+    console.error("Error adding ICE candidate:", err);
+  }
+});
+
+// 5. When first user joins, create an offer
+async function makeOffer() {
+  const offer = await peer.createOffer();
+  await peer.setLocalDescription(offer);
+  socket.emit("offer", offer);
+}
+
+// Try making an offer a few seconds after connecting
+socket.on("connect", () => {
+  setTimeout(makeOffer, 1000);
+});
