@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const socketIo = require('socket.io');
+const socket = io('https://your-app-name.onrender.com');
 
 // Create an Express application
 const app = express();
