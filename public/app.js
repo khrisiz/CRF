@@ -1,4 +1,5 @@
-const socket = io(); // Connects to your server (Render URL if deployed)
+const socket = io('https://www.wokisha.online');
+
 
 let localStream;
 let peerConnection;
