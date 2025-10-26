@@ -1,17 +1,12 @@
 {
-  "name": "video-pairing-app",
+  "name": "webrtc-signaling",
   "version": "1.0.0",
-  "description": "A live video pairing application",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.18.2",
-    "socket.io": "^4.7.2"
-  },
-  "engines": {
-    "node": ">=22.0.0"
+    "express": "^4.18.3",
+    "socket.io": "^4.8.1"
   }
 }
-
