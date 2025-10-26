@@ -13,91 +13,111 @@ const configuration = {
   ],
 };
 
-// Initialize chess board
-const board = [
-  ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
-  ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['', '', '', '', '', '', '', ''],
-  ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
-  ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
-];
+// Initialize Three.js scene
+let scene, camera, renderer;
+let chessboard, pieces = [];
+let selectedPiece3D = null;
 
-// Create the chess board
-function createBoard() {
-  const boardElement = document.getElementById('game-board');
-  boardElement.innerHTML = ''; // Clear any existing board
-  
+function createScene() {
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('game-board') });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+
+  // Lighting
+  const light = new THREE.PointLight(0xFFFFFF);
+  light.position.set(10, 10, 10);
+  scene.add(light);
+
+  // Create 3D Chessboard
+  createChessboard();
+  camera.position.z = 10;
+  animate();
+}
+
+// Create chessboard (8x8 grid)
+function createChessboard() {
+  const boardGeometry = new THREE.BoxGeometry(1, 1, 0.1);
+  const darkMaterial = new THREE.MeshBasicMaterial({ color: 0x3b3b3b });
+  const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xd4d4d4 });
+
   for (let row = 0; row < 8; row++) {
     for (let col = 0; col < 8; col++) {
-      const square = document.createElement('div');
-      square.classList.add('square');
-      square.classList.add((row + col) % 2 === 0 ? 'white' : 'black');
-      square.dataset.row = row;
-      square.dataset.col = col;
-      square.textContent = board[row][col];
-      square.addEventListener('click', () => handlePieceSelection(board[row][col], square));
-      boardElement.appendChild(square);
+      const square = new THREE.Mesh(
+        boardGeometry,
+        (row + col) % 2 === 0 ? lightMaterial : darkMaterial
+      );
+      square.position.set(col - 3.5, row - 3.5, 0);
+      scene.add(square);
     }
   }
 }
 
-// Handle piece selection
-function handlePieceSelection(piece, square) {
-  const fromRow = parseInt(square.dataset.row);
-  const fromCol = parseInt(square.dataset.col);
+// Create 3D piece (using cylinders for simplicity)
+function createPiece(piece, row, col, color) {
+  const geometry = new THREE.CylinderGeometry(0.4, 0.4, 1);
+  const material = new THREE.MeshBasicMaterial({ color: color === 'white' ? 0xFFFFFF : 0x000000 });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.position.set(col - 3.5, row - 3.5, 0.5);
+  scene.add(mesh);
+  pieces.push({ piece, row, col, mesh });
+}
 
-  if (!selectedPiece) {
-    // Select the piece if it's your turn
-    if (currentTurn === 'white' && piece === piece.toUpperCase()) {
-      selectedPiece = piece;
-      selectedSquare = square;
-      square.classList.add('selected');
-    } else if (currentTurn === 'black' && piece === piece.toLowerCase()) {
-      selectedPiece = piece;
-      selectedSquare = square;
-      square.classList.add('selected');
-    }
-  } else {
-    // Move the selected piece to the new square
-    const toRow = parseInt(square.dataset.row);
-    const toCol = parseInt(square.dataset.col);
+// Initialize board pieces based on the initial setup
+function initializePieces() {
+  const initialBoard = [
+    ['R', 'N', 'B', 'Q', 'K', 'B', 'N', 'R'],
+    ['P', 'P', 'P', 'P', 'P', 'P', 'P', 'P'],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['', '', '', '', '', '', '', ''],
+    ['p', 'p', 'p', 'p', 'p', 'p', 'p', 'p'],
+    ['r', 'n', 'b', 'q', 'k', 'b', 'n', 'r']
+  ];
 
-    // Example validation: only move to an empty square (you can add more logic here)
-    if (isValidMove(selectedPiece, fromRow, fromCol, toRow, toCol)) {
-      const move = { piece: selectedPiece, fromRow, fromCol, toRow, toCol };
-      sendMove(move);  // Send the move to the other player
-      applyMoveToBoard(move);  // Update the local board visually
-      switchTurn();  // Change turn
-    } else {
-      // Invalid move, deselect the piece
-      selectedPiece = null;
-      selectedSquare.classList.remove('selected');
-      selectedSquare = null;
+  for (let row = 0; row < 8; row++) {
+    for (let col = 0; col < 8; col++) {
+      const piece = initialBoard[row][col];
+      if (piece) {
+        const color = piece === piece.toUpperCase() ? 'white' : 'black';
+        createPiece(piece, row, col, color);
+      }
     }
   }
 }
 
-// Example: Validate moves (you can improve this logic with real chess rules)
-function isValidMove(piece, fromRow, fromCol, toRow, toCol) {
-  return true;  // Always return true for now (for simplicity)
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
 }
 
-// Apply move to the chessboard visually
-function applyMoveToBoard(move) {
-  const fromSquare = document.querySelector(`[data-row="${move.fromRow}"][data-col="${move.fromCol}"]`);
-  const toSquare = document.querySelector(`[data-row="${move.toRow}"][data-col="${move.toCol}"]`);
+// Handle video call setup
+navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+  .then(stream => {
+    localStream = stream;
+    document.getElementById('localVideo').srcObject = stream;
+  })
+  .catch(err => console.error('Error accessing camera/mic:', err));
 
-  toSquare.textContent = fromSquare.textContent;
-  fromSquare.textContent = '';
-}
+// Join signaling room
+socket.emit('join-room', roomId);
 
-// Switch turns
-function switchTurn() {
-  currentTurn = currentTurn === 'white' ? 'black' : 'white';
-  document.getElementById('turnIndicator').textContent = `It's ${currentTurn}'s turn`;
+// WebRTC setup
+function createPeerConnection() {
+  const pc = new RTCPeerConnection(configuration);
+
+  pc.onicecandidate = event => {
+    if (event.candidate) {
+      socket.emit('ice-candidate', event.candidate, roomId);
+    }
+  };
+
+  pc.ontrack = event => {
+    document.getElementById('remoteVideo').srcObject = event.streams[0];
+  };
+
+  return pc;
 }
 
 // Start call (Player 1)
@@ -113,18 +133,7 @@ async function createOffer() {
   console.log('Offer sent to room:', roomId);
 }
 
-// Handle video call setup
-navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-  .then(stream => {
-    localStream = stream;
-    document.getElementById('localVideo').srcObject = stream;
-  })
-  .catch(err => console.error('Error accessing camera/mic:', err));
-
-// Join signaling room
-socket.emit('join-room', roomId);
-
-// Set up signaling events
+// Handle signaling events
 socket.on('offer', async (offer, senderId) => {
   peerConnection = createPeerConnection();
   await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
@@ -149,10 +158,33 @@ socket.on('ice-candidate', async (candidate, senderId) => {
 });
 
 socket.on('move', (move, senderId) => {
-  applyMoveToBoard(move);  // Update the board with the received move
-  switchTurn();  // Switch turns after the move
+  applyMoveToBoard(move);
+  switchTurn();
 });
 
-createBoard();  // Initialize the chess board
+// Send move data to the other player
+function sendMove(move) {
+  socket.emit('move', move, roomId);
+}
 
+// Apply move to the board
+function applyMoveToBoard(move) {
+  const fromSquare = pieces.find(p => p.row === move.fromRow && p.col === move.fromCol);
+  const toSquare = pieces.find(p => p.row === move.toRow && p.col === move.toCol);
+
+  if (fromSquare && toSquare) {
+    toSquare.mesh.position.set(toSquare.col - 3.5, toSquare.row - 3.5, 0.5);
+    fromSquare.mesh.position.set(fromSquare.col - 3.5, fromSquare.row - 3.5, 0.5);
+  }
+}
+
+// Switch turns after each move
+function switchTurn() {
+  currentTurn = currentTurn === 'white' ? 'black' : 'white';
+  document.getElementById('turnIndicator').textContent = `It's ${currentTurn}'s turn`;
+}
+
+createScene();  // Initialize Three.js scene
+initializePieces();  // Initialize chess pieces
 document.getElementById('startCall').addEventListener('click', createOffer);
+
