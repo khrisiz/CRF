@@ -1,18 +1,11 @@
 {
   "name": "webrtc-iqtest-app",
   "version": "1.0.0",
-  "description": "A WebRTC video chat app with a separate IQ test page",
+  "description": "WebRTC video chat app with IQ test page",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": [
-    "webrtc",
-    "express",
-    "socket.io",
-    "iq-test",
-    "video-chat"
-  ],
   "author": "Your Name",
   "license": "MIT",
   "dependencies": {
