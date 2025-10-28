@@ -6,7 +6,7 @@ let localStream;
 let peerConnection;
 const config = { iceServers: [{ urls: 'stun:stun.l.google.com:19302' }] };
 
-// Get local video/audio
+// Get user media
 navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   .then(stream => {
     localVideo.srcObject = stream;
@@ -15,7 +15,7 @@ navigator.mediaDevices.getUserMedia({ video: true, audio: true })
   })
   .catch(console.error);
 
-// Create PeerConnection
+// Create peer connection
 function createPeer() {
   peerConnection = new RTCPeerConnection(config);
   localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
@@ -26,7 +26,7 @@ function createPeer() {
   };
 }
 
-// Start a call
+// Start call
 function startCall() {
   createPeer();
   peerConnection.createOffer()
@@ -34,7 +34,7 @@ function startCall() {
     .then(() => socket.emit('offer', peerConnection.localDescription));
 }
 
-// Handle incoming signals
+// Handle signaling
 socket.on('offer', async offer => {
   createPeer();
   await peerConnection.setRemoteDescription(offer);
