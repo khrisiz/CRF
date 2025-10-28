@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WebRTC Video Chat</title>
+  <style>
+    video { width: 45%; margin: 2%; border: 1px solid #333; }
+    #container { display: flex; justify-content: center; align-items: center; }
+    a { display: block; margin-top: 20px; text-align: center; }
+  </style>
+</head>
+<body>
+  <h2 style="text-align:center;">WebRTC Video Chat</h2>
+  <div id="container">
+    <video id="localVideo" autoplay muted playsinline></video>
+    <video id="remoteVideo" autoplay playsinline></video>
+  </div>
+  <a href="iqtest.html">Go to IQ Test</a>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
