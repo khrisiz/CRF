@@ -1,58 +1,25 @@
+// server.js
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
+const { Server } = require('socket.io');
+const path = require('path');
 
-
-// Create an Express application
 const app = express();
 const server = http.createServer(app);
+const io = new Server(server);
 
-// Initialize Socket.io
-const io = socketIo(server);
+// Serve client files from "public" folder
+app.use(express.static(path.join(__dirname, 'public')));
 
-// Serve static files (if needed, for frontend UI)
-app.use(express.static('public'));
-
-// When a new client connects
 io.on('connection', socket => {
-  console.log('New client connected: ', socket.id);
+  console.log('User connected');
 
-  // When the client sends an 'offer' message
-  socket.on('offer', (offer, roomId) => {
-    console.log(`Offer received from ${socket.id} for room ${roomId}`);
-    // Broadcast the offer to other clients in the room
-    socket.to(roomId).emit('offer', offer, socket.id);
-  });
+  socket.on('offer', offer => socket.broadcast.emit('offer', offer));
+  socket.on('answer', answer => socket.broadcast.emit('answer', answer));
+  socket.on('ice-candidate', candidate => socket.broadcast.emit('ice-candidate', candidate));
 
-  // When the client sends an 'answer' message
-  socket.on('answer', (answer, roomId) => {
-    console.log(`Answer received from ${socket.id} for room ${roomId}`);
-    // Broadcast the answer to the client that made the offer
-    socket.to(roomId).emit('answer', answer, socket.id);
-  });
-
-  // When the client sends an ICE candidate
-  socket.on('ice-candidate', (candidate, roomId) => {
-    console.log(`ICE candidate received from ${socket.id} for room ${roomId}`);
-    // Broadcast the ICE candidate to the other client
-    socket.to(roomId).emit('ice-candidate', candidate, socket.id);
-  });
-
-  // Join a room (for peer-to-peer connections)
-  socket.on('join-room', (roomId) => {
-    console.log(`${socket.id} joining room ${roomId}`);
-    socket.join(roomId);
-  });
-
-  // Handle disconnection
-  socket.on('disconnect', () => {
-    console.log('Client disconnected: ', socket.id);
-  });
+  socket.on('disconnect', () => console.log('User disconnected'));
 });
 
-// Start the server
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
-
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
