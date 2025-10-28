@@ -1,15 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>IQ Test</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IQ Test</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  h2 { text-align: center; }
+  .question { margin-bottom: 20px; }
+  button { margin-top: 10px; }
+  #score { font-weight: bold; margin-top: 20px; }
+  a { display: block; margin-top: 20px; text-align: center; }
+</style>
 </head>
 <body>
-  <h2>IQ Test</h2>
-  <p>Question 1: What comes next in the series? 2, 4, 8, 16, ?</p>
-  <button onclick="alert('Answer: 32')">Show Answer</button>
-  <br><br>
-  <a href="index.html">Back to Video Chat</a>
+<h2>IQ Test</h2>
+
+<div class="question">
+  <p>1. What comes next in the series? 2, 4, 8, 16, ?</p>
+  <input type="text" id="q1" placeholder="Your answer">
+</div>
+
+<div class="question">
+  <p>2. Find the odd one out: Apple, Banana, Carrot, Mango</p>
+  <input type="text" id="q2" placeholder="Your answer">
+</div>
+
+<button onclick="checkAnswers()">Submit</button>
+<div id="score"></div>
+<a href="index.html">Back to Video Chat</a>
+
+<script>
+function checkAnswers() {
+  let score = 0;
+  const ans1 = document.getElementById('q1').value.trim();
+  const ans2 = document.getElementById('q2').value.trim().toLowerCase();
+  if(ans1 === "32") score++;
+  if(ans2 === "carrot") score++;
+  document.getElementById('score').innerText = `Your score: ${score}/2`;
+}
+</script>
 </body>
 </html>
